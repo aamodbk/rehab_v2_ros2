@@ -1,0 +1,307 @@
+<?xml version="1.0" ?>
+<robot name="rehab_v2" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Constants for wheel mechanical parameters -->
+<xacro:property name="PI" value="3.1415926535897931"/>
+<xacro:property name="chassis_mass" value="1.074"/>
+<xacro:property name="chassis_height" value="0.04"/>
+<xacro:property name="robot_height" value="0.053"/>
+<xacro:property name="wheel_mass" value="0.105" />
+<xacro:property name="wheel_radius" value="0.0508" />
+<xacro:property name="motor_shaft_radius" value="0.002" />
+<xacro:property name="shaft_mass" value="0.001" />
+<xacro:property name="distance_to_roller_center" value="0.04645"/>
+
+<!-- The sum of the chassis radius, half the wheel thickness, and the 
+motor shaft length must be equal to the robot radius L = 0.1 m used in the
+kinematic model -->
+<xacro:property name="chassis_radius" value="0.085"/>
+<xacro:property name="wheel_thickness" value="0.01905" />
+<xacro:property name="motor_shaft_length" value="0.005475"/>
+<!-- <xacro:include filename="$(find rehab_v2_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find rehab_v2_description)/urdf/rehab_v2_urdf.trans" />
+<xacro:include filename="$(find rehab_v2_description)/urdf/rehab_v2_urdf.gazebo" /> -->
+<xacro:include filename="$(find rehab_v2_description)/urdf/materials.urdf.xacro"/>
+<xacro:include filename="$(find rehab_v2_description)/urdf/gazebo.urdf.xacro"/>
+<xacro:include filename="$(find rehab_v2_description)/urdf/ros2_control.urdf.xacro"/>
+
+
+<link name="base_link"></link>
+
+<joint name="base_link_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="chassis_link" />
+</joint>
+
+<link name="chassis_link">
+  <inertial>
+    <origin xyz="0.001138612937344581 0.19234964961609782 0.3204956026887265" rpy="0 0 0"/>
+    <mass value="86.33588416190187"/>
+    <inertia ixx="13.194166" iyy="9.69406" izz="4.846894" ixy="0.001806" iyz="-1.170276" ixz="0.002848"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<xacro:macro name="insert_roller" params="parent reflect theta suffix wheel">
+  <joint name="rim_to_roller${wheel}${suffix}joint" type="continuous">
+    <origin xyz="${distance_to_roller_center*cos(theta)} ${distance_to_roller_center*sin(theta)} ${reflect*0.008}" rpy="0.0 0.0 ${theta-PI/2}"/>
+    <parent link="${parent}"/>
+    <child link="roller${wheel}${suffix}_link"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <dynamics friction="0.1"/>
+  </joint>
+
+  <link name="roller${wheel}${suffix}_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="file://$(find rehab_v2_description)/meshes/roller.stl"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="file://$(find rehab_v2_description)/meshes/roller.stl"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.003"/>
+      <inertia ixx="5.3e-8"
+                ixy="0.0"
+                ixz="0.0"
+                iyy="8e-8"
+                iyz="0.0"
+                izz="8e-8"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="roller${wheel}${suffix}_link">
+    <material>Gazebo/Green</material>
+    <fdir1>1 0 0"</fdir1>
+    <mu1>100</mu1>
+    <mu2>100</mu2>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+</xacro:macro>
+
+<xacro:macro name="wheel_rollers" params="parent suffix">
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="0" suffix="1" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${PI/6}" suffix="2" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${PI/3}" suffix="3" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${PI/2}" suffix="4" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${2*PI/3}" suffix="5" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${5*PI/6}" suffix="6" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${PI}" suffix="7" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${7*PI/6}" suffix="8" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${4*PI/3}" suffix="9" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${3*PI/2}" suffix="10" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${5*PI/3}" suffix="11" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="1.0" theta="${11*PI/6}" suffix="12" wheel="${suffix}"/>  
+
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${45*PI/180}" suffix="-1" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${75*PI/180}" suffix="-2" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${105*PI/180}" suffix="-3" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${135*PI/180}" suffix="-4" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${165*PI/180}" suffix="-5" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${195*PI/180}" suffix="-6" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${225*PI/180}" suffix="-7" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${255*PI/180}" suffix="-8" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${285*PI/180}" suffix="-9" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${315*PI/180}" suffix="-10" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${345*PI/180}" suffix="-11" wheel="${suffix}"/>
+  <xacro:insert_roller parent="${parent}" reflect="-1.0" theta="${375*PI/180}" suffix="-12" wheel="${suffix}"/>
+</xacro:macro>
+
+<joint name="fl_wheel_joint" type="continuous">
+  <origin xyz="-0.263656 0.454989 0.077457" rpy="0.0 ${PI/2} ${(2*PI)-(PI/6)}"/>
+  <parent link="chassis_link"/>
+  <child link="fl_wheel"/>
+  <!-- <axis xyz="-0.866025 0.5 -0.0"/> -->
+  <axis xyz="0.0 0.0 1.0"/>
+</joint>
+
+<joint name="r_wheel_joint" type="continuous">
+  <origin xyz="0.000562 -0.167521 0.077578" rpy="0.0 ${PI/2} ${(2*PI/3)-(PI/6)}"/>
+  <parent link="chassis_link"/>
+  <child link="r_wheel"/>
+  <!-- <axis xyz="0.0 -1.0 0.0"/> -->
+  <axis xyz="0.0 0.0 1.0"/>
+</joint>
+
+<joint name="fr_wheel_joint" type="continuous">
+  <origin xyz="0.268303 0.455573 0.077575" rpy="0.0 ${PI/2} ${(4*PI/3)-(PI/6)}"/>
+  <parent link="chassis_link"/>
+  <child link="fr_wheel"/>
+  <!-- <axis xyz="0.866025 0.5 0.0"/> -->
+  <axis xyz="0.0 0.0 1.0"/>
+</joint>
+
+<!-- <link name="fl_wheel">
+  <inertial>
+    <origin xyz="-0.00995937196816532 0.005750082111966759 2.3316968233294544e-06" rpy="0 0 0"/>
+    <mass value="0.4886543363728294"/>
+    <inertia ixx="0.001376" iyy="0.001012" izz="0.000831" ixy="-0.000315" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.263656 -0.454989 -0.077457" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Front_Left_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.263656 -0.454989 -0.077457" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Front_Left_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link> -->
+
+<link name="fl_wheel">
+  <visual>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/rim.stl"/>
+    </geometry>
+    <material name="grey"/>
+  </visual>
+
+  <collision>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/wheel-collision.dae"/>
+    </geometry>
+  </collision>
+
+  <inertial>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <mass value="0.113"/>
+    <inertia ixx="0.000089064"
+              ixy="0.0"
+              ixz="0.0"
+              iyy="0.000089064"
+              iyz="0.0"
+              izz="0.000173339"/>
+  </inertial>
+</link>
+
+<!-- <link name="r_wheel">
+  <inertial>
+    <origin xyz="5.880711533331594e-07 -0.011499850615123014 2.482311041759888e-06" rpy="0 0 0"/>
+    <mass value="0.4886543363728298"/>
+    <inertia ixx="0.000831" iyy="0.001557" izz="0.000831" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.000562 0.167521 -0.077578" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Rear_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.000562 0.167521 -0.077578" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Rear_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link> -->
+
+<link name="r_wheel">
+  <visual>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/rim.stl"/>
+    </geometry>
+    <material name="grey"/>
+  </visual>
+
+  <collision>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/wheel-collision.dae"/>
+    </geometry>
+  </collision>
+
+  <inertial>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <mass value="0.113"/>
+    <inertia ixx="0.000089064"
+              ixy="0.0"
+              ixz="0.0"
+              iyy="0.000089064"
+              iyz="0.0"
+              izz="0.000173339"/>
+  </inertial>
+</link>
+
+<!-- <link name="fr_wheel">
+  <inertial>
+    <origin xyz="0.009959086962128993 0.005749946087792668 2.5698096167564577e-06" rpy="0 0 0"/>
+    <mass value="0.48865433637282973"/>
+    <inertia ixx="0.001376" iyy="0.001012" izz="0.000831" ixy="0.000315" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.268303 -0.455573 -0.077575" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Front_Right_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.268303 -0.455573 -0.077575" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find rehab_v2_description)/meshes/Front_Right_Wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link> -->
+
+<link name="fr_wheel">
+  <visual>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/rim.stl"/>
+    </geometry>
+    <material name="grey"/>
+  </visual>
+
+  <collision>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <geometry>
+      <mesh filename="file://$(find rehab_v2_description)/meshes/wheel-collision.dae"/>
+    </geometry>
+  </collision>
+
+  <inertial>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <mass value="0.113"/>
+    <inertia ixx="0.000089064"
+              ixy="0.0"
+              ixz="0.0"
+              iyy="0.000089064"
+              iyz="0.0"
+              izz="0.000173339"/>
+  </inertial>
+</link>
+
+<xacro:wheel_rollers parent="fl_wheel" suffix="1"/>
+<xacro:wheel_rollers parent="r_wheel" suffix="2"/>
+<xacro:wheel_rollers parent="fr_wheel" suffix="3"/>
+
+</robot>
